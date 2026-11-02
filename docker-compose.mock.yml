@@ -4,6 +4,8 @@ services:
   mock:
     build: .
     command: ["python", "-m", "tools.mock_upstreams"]
+    environment:
+      PORT: "9000"
   gateway:
     build: .
     ports: ["8000:8000"]
