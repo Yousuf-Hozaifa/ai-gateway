@@ -10,6 +10,8 @@ safety checks, health aggregation, metrics, structured logs and a deployment pip
 model of its own, so it is light (a few dozen MB of RAM) and each backend stays independently deployable.
 
 **Related repos:** _link your `rag-eval-service` and `receipt-intelligence` repos_
+**Live demo:** [ai-gateway-api-zi9y.onrender.com/dashboard](https://ai-gateway-api-zi9y.onrender.com/dashboard)
+(runs on demo backends; free hosting, so the first load can take about a minute)
 
 ```mermaid
 flowchart LR
@@ -98,11 +100,12 @@ Two checks, both configurable with `INJECTION_MODE` (`block`, `flag`, `off`) and
    extraction, fake system tags, jailbreak terms, exfiltration, English plus a few other languages).
    Weights combine so several weak signals can add up to a block. Blocked requests never reach the backend.
 2. **The retrieved passages in the response.** A poisoned document is the indirect route in. If a passage
-   scores above the threshold, the answer is withheld and the passage ranks are reported.
+   scores above the threshold, the answer is withheld, the passage text is replaced with a redaction notice
+   (so injected text is not passed on to a downstream agent), and the passage ranks are reported.
    This check runs *after* the backend has already generated the answer, so it protects the client
    from acting on a manipulated answer but does not stop the model from reading the passage.
    The stronger fix is to screen documents at indexing time.
-
+   
 ### Measured on the bundled test set
 
 `python -m eval.injection_eval` on 40 attacks and 40 benign questions, threshold 0.8:
@@ -150,7 +153,7 @@ The gateway is small enough for Render's free instance (512 MB RAM). The model s
 
 Free instances sleep after 15 minutes without traffic, so the first request after a pause can take about a minute.
 
-**Live demo:** _add your Render URL_ (demo key: _add_; it is public, so do not reuse it anywhere)
+The `/v1/*` API requires an `X-API-Key`; the dashboard and health endpoints are public.
 
 ## Observability
 
