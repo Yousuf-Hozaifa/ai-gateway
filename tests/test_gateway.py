@@ -51,6 +51,7 @@ def test_poisoned_retrieved_passage_withholds_answer(make_client, upstreams):
     assert body["mode"] == "withheld" and body["security"]["action"] == "withheld"
     assert body["security"]["retrieved_flagged"] == [1]
     assert "seven hours" not in body["answer"]
+    assert "Ignore all previous" not in str(body) and body["sources"][0]["text"].startswith("[redacted")
 
 
 def test_validation_happens_at_the_gateway(make_client, upstreams):

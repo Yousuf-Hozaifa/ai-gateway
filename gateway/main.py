@@ -28,7 +28,7 @@ log = logging.getLogger("gateway.access")
 _REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{8,64}$")
 _IMAGE_MAGIC = (b"\x89PNG\r\n\x1a\n", b"\xff\xd8\xff", b"RIFF")  # PNG, JPEG, WebP container
 WITHHELD = "Answer withheld: the retrieved documents contain instruction-like content."
-
+REDACTED = "[redacted: passage contains instruction-like content]"
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=1000)
@@ -164,6 +164,7 @@ def create_app(
                 security["retrieved_flagged"].append(source.get("rank"))
                 if found.blocked and cfg.injection_mode == "block":
                     _record_injection("retrieved", "blocked", found.rules)
+                    source["text"] = REDACTED  # do not pass injected text on to the client or an agent
                     withheld = True
                 else:
                     _record_injection("retrieved", "flagged", found.rules)
