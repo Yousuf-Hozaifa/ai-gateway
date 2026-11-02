@@ -9,7 +9,7 @@ The gateway adds what a model service alone does not have: authentication, rate 
 safety checks, health aggregation, metrics, structured logs and a deployment pipeline. It has no
 model of its own, so it is light (a few dozen MB of RAM) and each backend stays independently deployable.
 
-**Related repos:** _link your `rag-eval-service` and `receipt-intelligence` repos_
+**Related repos:**
 **Live demo:** [ai-gateway-api-zi9y.onrender.com/dashboard](https://ai-gateway-api-zi9y.onrender.com/dashboard)
 (runs on demo backends; free hosting, so the first load can take about a minute)
 
