@@ -1,0 +1,31 @@
+# Real stack. Expects the other two projects as sibling folders:
+#   ../rag-eval-service   and   ../receipt-intelligence
+#   docker compose up --build                       gateway + RAG service
+#   docker compose --profile receipts up --build    adds the receipt service (needs ~2 GB RAM)
+#   docker compose --profile monitoring up          adds Prometheus on :9090
+services:
+  gateway:
+    build: .
+    ports: ["8000:8000"]
+    env_file: [.env]
+    environment:
+      RAG_URL: http://rag:7860
+      RECEIPTS_URL: http://receipts:7860
+    depends_on: [rag]
+
+  rag:
+    build: ../rag-eval-service
+    environment:
+      LLM_API_KEY: ${LLM_API_KEY:-}
+
+  receipts:
+    profiles: ["receipts"]
+    build: ../receipt-intelligence
+    environment:
+      MODEL_ID: ${MODEL_ID:-}
+
+  prometheus:
+    profiles: ["monitoring"]
+    image: prom/prometheus:v2.55.0
+    ports: ["9090:9090"]
+    volumes: ["./prometheus.yml:/etc/prometheus/prometheus.yml:ro"]

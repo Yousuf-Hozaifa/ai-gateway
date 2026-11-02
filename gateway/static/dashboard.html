@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Gateway Dashboard</title>
+<style>
+  :root { color-scheme: light dark; --line: #8886; --ok: #1b7f5c; --bad: #b42318; }
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
+  h2 { margin: 1.75rem 0 .4rem; font-size: 1.15rem; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--line); }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .cards { display: flex; gap: .75rem; flex-wrap: wrap; }
+  .card { flex: 1 1 150px; border: 1px solid var(--line); border-radius: 8px; padding: .6rem .8rem; }
+  .card b { display: block; font-size: 1.5rem; }
+  .ok { color: var(--ok); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; }
+  small { opacity: .7; }
+</style>
+</head>
+<body>
+<h1>AI Gateway</h1>
+<small id="meta">Loading...</small>
+
+<h2>Backend services</h2>
+<table id="ready" aria-live="polite"></table>
+
+<h2>Traffic (last 1000 requests per route)</h2>
+<table id="routes"></table>
+
+<h2>Security and review</h2>
+<div class="cards" id="cards"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const cell = (text, cls) => { const td = document.createElement("td"); td.textContent = text; if (cls) td.className = cls; return td; };
+const head = (labels) => { const tr = document.createElement("tr"); labels.forEach((l, i) => { const th = document.createElement("th"); th.textContent = l; if (i) th.className = "n"; tr.append(th); }); return tr; };
+
+async function refresh() {
+  try {
+    const [stats, ready] = await Promise.all([
+      fetch("/stats").then(r => r.json()),
+      fetch("/ready").then(r => r.json()),
+    ]);
+    $("meta").textContent = `Uptime ${stats.uptime_s} s. Refreshes every 5 s.`;
+
+    const rt = $("ready"); rt.replaceChildren(head(["Service", "Status", "Latency (ms)"]));
+    Object.entries(ready.upstreams).forEach(([name, u]) => {
+      const tr = document.createElement("tr");
+      tr.append(cell(name), cell(u.status, u.status === "ok" ? "ok n" : "bad n"), cell(u.latency_ms, "n"));
+      rt.append(tr);
+    });
+
+    const t = $("routes"); t.replaceChildren(head(["Route", "Requests", "p50 (ms)", "p95 (ms)", "5xx rate"]));
+    Object.entries(stats.routes).forEach(([route, r]) => {
+      const tr = document.createElement("tr");
+      tr.append(cell(route), cell(r.count, "n"), cell(r.p50_ms, "n"), cell(r.p95_ms, "n"), cell((r.error_rate * 100).toFixed(1) + "%", "n"));
+      t.append(tr);
+    });
+
+    const items = [
+      ["Injection blocked", stats.security.injection_blocked], ["Injection flagged", stats.security.injection_flagged],
+      ["Rate limited", stats.security.rate_limited], ["Auth failures", stats.security.auth_failures],
+      ["Receipts auto-OK", stats.receipts.auto], ["Receipts for review", stats.receipts.needs_review],
+    ];
+    $("cards").replaceChildren(...items.map(([label, value]) => {
+      const d = document.createElement("div"); d.className = "card";
+      const b = document.createElement("b"); b.textContent = value;
+      d.append(b, document.createTextNode(label)); return d;
+    }));
+  } catch (e) { $("meta").textContent = "Could not load stats: " + e.message; }
+}
+refresh(); setInterval(refresh, 5000);
+</script>
+</body>
+</html>

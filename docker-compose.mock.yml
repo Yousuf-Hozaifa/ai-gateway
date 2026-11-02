@@ -1,0 +1,14 @@
+# Whole stack with lightweight fake backends. No models, no API keys, runs in seconds.
+#   docker compose -f docker-compose.mock.yml up --build
+services:
+  mock:
+    build: .
+    command: ["python", "-m", "tools.mock_upstreams"]
+  gateway:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      RAG_URL: http://mock:9000
+      RECEIPTS_URL: http://mock:9000
+      RATE_LIMIT_PER_MIN: "0"
+    depends_on: [mock]
